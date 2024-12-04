@@ -2,7 +2,7 @@
   "version": 2,
   "functions": {
     "index.js": {
-      "runtime": "node22"
+      "runtime": "node16"
     }
   }
 }
