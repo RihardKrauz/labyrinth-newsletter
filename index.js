@@ -1,79 +1,79 @@
-// const TelegramBot = require('node-telegram-bot-api');
-//
-// module.exports = async (req, res) => {
-//     // Replace with your bot's token
-//     const TOKEN = env.TELEGRAM_API_TOKEN;
-//
-// // Initialize bot with polling
-//     const bot = new TelegramBot(TOKEN, { polling: true });
-//
-// // Storage for messages
-//     const messages = {};
-//
-// // Function to get today's date in YYYY-MM-DD format
-//     const getTodayDate = () => {
-//         return new Date().toISOString().split('T')[0];
-//     };
-//
-// // Handle incoming messages
-//     bot.on('message', (msg) => {
-//         try {
-//             const chatId = msg.chat.id;
-//             const today = getTodayDate();
-//
-//             // Initialize storage for today's messages if not present
-//             if (!messages[chatId]) messages[chatId] = {};
-//             if (!messages[chatId][today]) messages[chatId][today] = [];
-//
-//             // Add the message to today's list
-//             messages[chatId][today].push(msg.text || '[Не-текстовое-сообщение]');
-//         } catch (ex) {
-//             console.error(ex)
-//         }
-//
-//     });
-//
-// // Handle the "/show_newsletter" command
-//     bot.onText(/\/show_newsletter/, (msg) => {
-//         try {
-//             const chatId = msg.chat.id;
-//             const today = getTodayDate();
-//
-//             // Retrieve messages for today
-//             const todayMessages = messages[chatId]?.[today];
-//
-//             // If no messages are found for today, notify the user
-//             if (!todayMessages || todayMessages.length === 0) {
-//                 bot.sendMessage(chatId, 'Газеты пусты, минотавр дремлет.');
-//                 return;
-//             }
-//
-//             // If no messages are found for today, notify the user
-//             if (todayMessages.length >= 50) {
-//                 bot.sendMessage(chatId, 'Будет проанализировано только последние 50 сообщений (API, хостинг, и AI токены не бесплатные!). Пожертвуйте лысому на пиво и массаж для разблокировки безлимитной версии :)');
-//             }
-//
-//             // Send all accumulated messages for today
-//             bot.sendMessage(chatId, `Сообщения за сегодня:\n\n${todayMessages.join('\n')}`);
-//         } catch (ex) {
-//             console.error(ex)
-//         }
-//     });
-//
-//     res.status(200).json({ message: 'Bot is running!' });
-// };
+const TelegramBot = require('node-telegram-bot-api');
 
+module.exports = async (req, res) => {
+    // Replace with your bot's token
+    const TOKEN = env.TELEGRAM_API_TOKEN;
 
-const express = require('express');
-const app = express();
-const PORT = 4000;
+// Initialize bot with polling
+    const bot = new TelegramBot(TOKEN, { polling: true });
 
-app.get('/home', (req, res) => {
-    res.status(200).json('Welcome, your app is working well');
-});
+// Storage for messages
+    const messages = {};
 
-app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-});
+// Function to get today's date in YYYY-MM-DD format
+    const getTodayDate = () => {
+        return new Date().toISOString().split('T')[0];
+    };
 
-module.exports = app;
+// Handle incoming messages
+    bot.on('message', (msg) => {
+        try {
+            const chatId = msg.chat.id;
+            const today = getTodayDate();
+
+            // Initialize storage for today's messages if not present
+            if (!messages[chatId]) messages[chatId] = {};
+            if (!messages[chatId][today]) messages[chatId][today] = [];
+
+            // Add the message to today's list
+            messages[chatId][today].push(msg.text || '[Не-текстовое-сообщение]');
+        } catch (ex) {
+            console.error(ex)
+        }
+
+    });
+
+// Handle the "/show_newsletter" command
+    bot.onText(/\/show_newsletter/, (msg) => {
+        try {
+            const chatId = msg.chat.id;
+            const today = getTodayDate();
+
+            // Retrieve messages for today
+            const todayMessages = messages[chatId]?.[today];
+
+            // If no messages are found for today, notify the user
+            if (!todayMessages || todayMessages.length === 0) {
+                bot.sendMessage(chatId, 'Газеты пусты, минотавр дремлет.');
+                return;
+            }
+
+            // If no messages are found for today, notify the user
+            if (todayMessages.length >= 50) {
+                bot.sendMessage(chatId, 'Будет проанализировано только последние 50 сообщений (API, хостинг, и AI токены не бесплатные!). Пожертвуйте лысому на пиво и массаж для разблокировки безлимитной версии :)');
+            }
+
+            // Send all accumulated messages for today
+            bot.sendMessage(chatId, `Сообщения за сегодня:\n\n${todayMessages.join('\n')}`);
+        } catch (ex) {
+            console.error(ex)
+        }
+    });
+
+    res.status(200).json({ message: 'Bot is running!' });
+};
+//
+//
+// const express = require('express');
+// const app = express();
+// const PORT = 4000;
+//
+// app.get('/home', (req, res) => {
+//     res.status(200).json('Welcome, your app is working well');
+// });
+//
+// app.listen(PORT, () => {
+//     console.log(`Server running at http://localhost:${PORT}`);
+// });
+//
+// module.exports = app;
