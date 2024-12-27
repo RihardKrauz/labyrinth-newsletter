@@ -1,5 +1,9 @@
 const TelegramBot = require('node-telegram-bot-api');
 
+const express = require('express');
+const app = express();
+const PORT = 443;
+
 // Take TG bot's token
 const TOKEN = process.env.TELEGRAM_API_TOKEN;
 
@@ -12,7 +16,11 @@ const getTodayDate = () => {
     return new Date().toISOString().split('T')[0];
 };
 
-module.exports = async (req, res) => {
+app.get('/home', (req, res) => {
+    res.status(200).json('Welcome, your app is working well');
+});
+
+app.get('/', async (req, res) => {
     // Initialize bot with polling
     bot = new TelegramBot(TOKEN, { polling: true });
     console.log('Bot initialized');
@@ -66,20 +74,10 @@ module.exports = async (req, res) => {
 
     console.log('Bot is running');
     res.status(200).json({ message: 'Bot is running!' });
-};
+});
 
-//
-//
-// const express = require('express');
-// const app = express();
-// const PORT = 4000;
-//
-// app.get('/home', (req, res) => {
-//     res.status(200).json('Welcome, your app is working well');
-// });
-//
-// app.listen(PORT, () => {
-//     console.log(`Server running at http://localhost:${PORT}`);
-// });
-//
-// module.exports = app;
+app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+});
+
+module.exports = app;
