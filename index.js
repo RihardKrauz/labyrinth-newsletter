@@ -76,4 +76,17 @@ bot.onText(/@LabyrinthNewsletterBot/, (msg) => {
     }
 });
 
+// Graceful shutdown on app termination
+process.on('SIGINT', async () => {
+    console.log('Gracefully shutting down...');
+    await bot.stopPolling(); // Stops the polling process
+    process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('Gracefully shutting down...');
+    await bot.stopPolling();
+    process.exit(0);
+});
+
 console.log('Bot is running');
