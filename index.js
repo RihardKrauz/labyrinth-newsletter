@@ -16,6 +16,11 @@ const getTodayDate = () => {
 const bot = new TelegramBot(TOKEN, { polling: true });
 console.log('Bot initialized');
 
+if (bot.isPolling()) {
+    console.log('It was polling, closing previous connection...');
+    await bot.stopPolling();
+}
+
 // Handle incoming messages
 bot.on('message', (msg) => {
     try {
