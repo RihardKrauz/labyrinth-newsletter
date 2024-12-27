@@ -23,6 +23,7 @@ if (bot.isPolling()) {
         subscribeHandlers();
     });
 } else {
+    console.log('It was NOT polling, starting connection...');
     bot.startPolling().then(() => {
         console.log('Polling started');
         subscribeHandlers();
