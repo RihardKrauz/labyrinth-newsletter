@@ -20,19 +20,23 @@ console.log('Bot initialized');
 bot.on('message', (msg) => {
     try {
         console.log('Message received', msg);
-        const chatId = msg.chat.id;
+        const chatId = msg.chat?.id;
         const today = getTodayDate();
 
         // Initialize storage for today's messages if not present
         if (!messages[chatId]) messages[chatId] = {};
         if (!messages[chatId][today]) messages[chatId][today] = [];
 
-        if (msg.text.includes('@LabyrinthNewsletterBot')) {
+        if (msg.text?.includes('@LabyrinthNewsletterBot')) {
             return;
         }
 
+        const chatMessage = msg.text
+            ? `Пользователь ${msg?.from?.username} сказал: ${msg.text} \n`
+            : `Пользователь ${msg?.from?.username} прислал нетекстовое сообщение \n`;
+
         // Add the message to today's list
-        messages[chatId][today].push(msg.text || '[Не-текстовое-сообщение]');
+        messages[chatId][today].push(chatMessage);
         if (messages[chatId][today].length >= MESSAGES_LIMIT) {
             messages[chatId][today].shift();
         }
@@ -45,7 +49,7 @@ bot.on('message', (msg) => {
 bot.onText(/@LabyrinthNewsletterBot/, (msg) => {
     console.log('Newsletter command received');
     try {
-        const chatId = msg.chat.id;
+        const chatId = msg.chat?.id;
         const today = getTodayDate();
 
         // Retrieve messages for today
