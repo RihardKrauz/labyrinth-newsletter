@@ -1,20 +1,21 @@
 const TelegramBot = require('node-telegram-bot-api');
 
+// Take TG bot's token
+const TOKEN = process.env.TELEGRAM_API_TOKEN;
+
+// Storage for messages
+let messages = {};
+let bot;
+
+// Function to get today's date in YYYY-MM-DD format
+const getTodayDate = () => {
+    return new Date().toISOString().split('T')[0];
+};
+
 module.exports = async (req, res) => {
-    // Replace with your bot's token
-    const TOKEN = process.env.TELEGRAM_API_TOKEN;
-
     // Initialize bot with polling
-    const bot = new TelegramBot(TOKEN, { polling: true });
+    bot = new TelegramBot(TOKEN, { polling: true });
     console.log('Bot initialized');
-
-    // Storage for messages
-    const messages = {};
-
-    // Function to get today's date in YYYY-MM-DD format
-    const getTodayDate = () => {
-        return new Date().toISOString().split('T')[0];
-    };
 
     // Handle incoming messages
     bot.on('message', (msg) => {
