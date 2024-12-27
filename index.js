@@ -64,10 +64,16 @@
 // };
 
 
-export const runtime = 'nodejs';
+const express = require('express');
+const app = express();
+const PORT = 4000;
 
-export function GET(request) {
-    return new Response(`I am a Serverless Function`, {
-        status: 200,
-    });
-}
+app.get('/home', (req, res) => {
+    res.status(200).json('Welcome, your app is working well');
+});
+
+app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+});
+
+module.exports = app;
