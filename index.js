@@ -4,19 +4,21 @@ module.exports = async (req, res) => {
     // Replace with your bot's token
     const TOKEN = process.env.TELEGRAM_API_TOKEN;
 
-// Initialize bot with polling
+    // Initialize bot with polling
     const bot = new TelegramBot(TOKEN, { polling: true });
+    console.log('Bot initialized');
 
-// Storage for messages
+    // Storage for messages
     const messages = {};
 
-// Function to get today's date in YYYY-MM-DD format
+    // Function to get today's date in YYYY-MM-DD format
     const getTodayDate = () => {
         return new Date().toISOString().split('T')[0];
     };
 
-// Handle incoming messages
+    // Handle incoming messages
     bot.on('message', (msg) => {
+        console.log('Message received: ', msg.text);
         try {
             const chatId = msg.chat.id;
             const today = getTodayDate();
@@ -33,8 +35,9 @@ module.exports = async (req, res) => {
 
     });
 
-// Handle the "/show_newsletter" command
+    // Handle the "/show_newsletter" command
     bot.onText(/\/show_newsletter/, (msg) => {
+        console.log('/show_newsletter command received');
         try {
             const chatId = msg.chat.id;
             const today = getTodayDate();
@@ -60,8 +63,10 @@ module.exports = async (req, res) => {
         }
     });
 
+    console.log('Bot is running');
     res.status(200).json({ message: 'Bot is running!' });
 };
+
 //
 //
 // const express = require('express');
