@@ -30,11 +30,29 @@ if (bot.isPolling()) {
     });
 }
 
+async function analyzeMessages(messages) {
+    try {
+        console.log('Analyzing messages...');
+        const response = await fetch("https://labyrinth-newsletter-ai.vercel.app/api/summary.js", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ messages: messages })
+        });
+
+        const data = await response.json();
+        return data.message;
+    } catch (ex) {
+        console.error(ex);
+        return ex.message || ex || 'Произошла ошибка при анализе сообщений';
+    }
+}
+
 function subscribeHandlers() {
     // Handle incoming messages
     bot.on('message', (msg) => {
         try {
-            console.log('Message received', msg);
             const chatId = msg.chat?.id;
             const today = getTodayDate();
 
@@ -60,8 +78,8 @@ function subscribeHandlers() {
         }
     });
 
-    // Handle the "/show_newsletter" command
-    bot.onText(/@LabyrinthNewsletterBot/, (msg) => {
+    // Handle the "@LabyrinthNewsletterBot" command
+    bot.onText(/@LabyrinthNewsletterBot/, async (msg) => {
         console.log('Newsletter command received');
         try {
             const chatId = msg.chat?.id;
@@ -82,7 +100,7 @@ function subscribeHandlers() {
             }
 
             // Send all accumulated messages for today
-            bot.sendMessage(chatId, `Сообщения за сегодня:\n\n${todayMessages.join('\n')}`);
+            bot.sendMessage(chatId, await analyzeMessages(todayMessages.join('\n')));
 
             // Clean up messages for today
             messages[chatId][today] = [];
