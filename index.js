@@ -18,7 +18,7 @@ console.log('Bot initialized');
 
 if (bot.isPolling()) {
     console.log('It was polling, closing previous connection...');
-    await bot.stopPolling();
+    bot.stopPolling().then(() => { console.log('Polling closed'); });
 }
 
 // Handle incoming messages
