@@ -93,16 +93,14 @@ function subscribeHandlers() {
 }
 
 // Graceful shutdown on app termination
-process.on('SIGINT', async () => {
+process.on('SIGINT',  () => {
     console.log('Gracefully shutting down...');
-    await bot.stopPolling(); // Stops the polling process
-    process.exit(0);
+    bot.stopPolling().then(() => { process.exit(0); }); // Stops the polling process
 });
 
-process.on('SIGTERM', async () => {
+process.on('SIGTERM',  () => {
     console.log('Gracefully shutting down...');
-    await bot.stopPolling();
-    process.exit(0);
+    bot.stopPolling().then(() => { process.exit(0); });
 });
 
 console.log('Bot is running');
