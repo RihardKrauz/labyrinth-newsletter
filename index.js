@@ -4,7 +4,18 @@ const TelegramBot = require('node-telegram-bot-api');
 const TOKEN = process.env.TELEGRAM_API_TOKEN;
 const MESSAGES_LIMIT = 500;
 
-// DB
+/* DB
+ * storage {
+ *  chatId: {
+ *     messages: ['message1', 'message2'],
+ *     lastCommand: 'command',
+ *     summaries: {
+ *      '2021-09-01': ['summary1', 'summary2'],
+ *      '2021-09-02': ['summary1', 'summary2'],
+ *      '2021-09-03': ['summary1', 'summary2'],
+ *     }
+ * }
+ */
 const storage = {};
 
 const getTodayDate = () => {
@@ -51,12 +62,32 @@ async function analyzeMessages(messages) {
 const botTag = '@LabyrinthNewsletterBot';
 
 const botTagRegex = new RegExp(`${botTag}`);
+const botTagWithDebugRegex = new RegExp(`^${botTag}\\sdebug`);
 const botTagWithNumberRegex = new RegExp(`^${botTag}\\s(\\d+)`);
 const botTagWithSummaryRegex = new RegExp(`^${botTag}\\ssummary`);
 const botTagWithSummaryAndDayRegex = new RegExp(`^${botTag}\\s(\\d{4}-\\d{2}-\\d{2})`);
 const commandHelpRegex = new RegExp(`^${botTag}\\shelp`);
 const commandMessagesSelectorRegex = new RegExp(`^${botTag}\\s(\\d+)|${botTag}`);
 const commandSummarySelectorRegex = new RegExp(`^${botTag}\\s(\\d{4}-\\d{2}-\\d{2})|^${botTag}\\ssummary`);
+const onlyMeFlag = 'me';
+
+const reply = async (msg, message, forceOnlyMeFlag) => {
+    const chatId = msg.chat?.id;
+    const senderId = msg.from?.id;
+
+    if (msg.text?.includes(onlyMeFlag) || forceOnlyMeFlag) {
+        const sentMessage = await bot.sendMessage(senderId, message);
+        setTimeout(() => {
+            bot.deleteMessage(chatId, sentMessage.message_id)
+                .then()
+                .catch((err) => {
+                    console.error('Failed to delete message:', err);
+                });
+        }, 500);
+    } else {
+        await bot.sendMessage(chatId, message);
+    }
+}
 
 function subscribeHandlers() {
     // Handle incoming messages
@@ -76,7 +107,7 @@ function subscribeHandlers() {
                 ? `${msg?.from?.username}: ${msg.text} \n`
                 : `${msg?.from?.username} прислал нетекстовое сообщение \n`;
 
-            // Add the message to today's list
+            // Add the message to the list
             storage[chatId].messages.push(chatMessage);
             if (storage[chatId].messages.length >= MESSAGES_LIMIT) {
                 storage[chatId].messages.shift();
@@ -89,10 +120,19 @@ function subscribeHandlers() {
     // Handle the "@LabyrinthNewsletterBot help" command
     bot.onText(commandHelpRegex, async (msg) => {
         try {
+            reply(msg, `Лабиринт приветствует тебя, странник! Я - бот, который поможет сделать сводку сообщений из чата. \n Введи @LabyrinthNewsletterBot и одну из команд: \n 1. "<ничего>" - чтобы получить анализ последних 100 сообщений  \n 2. "N" - чтобы проанализировать последние N сообщений \n 3. "summary" - чтобы получить все сводки за сегодня \n 4. "summary YYYY-MM-DD" - чтобы получить сводку за конкретный день \n 5. "help" - чтобы получить это сообщение снова. \n Добавь к команде "me", чтобы получить ответ в личные сообщения`);
+        } catch (ex) {
+            console.error(ex)
+        }
+    });
+
+    // Handle the "@LabyrinthNewsletterBot debug" command
+    bot.onText(botTagWithDebugRegex, async (msg) => {
+        try {
             const chatId = msg.chat?.id;
+            const chatName = msg.chat?.title;
 
-            bot.sendMessage(chatId, `Лабиринт приветствует тебя, странник! Я - бот, который поможет сделать сводку сообщений из чата. \n Введи @LabyrinthNewsletterBot и одну из команд: \n 1. "<ничего>" - чтобы получить анализ последних 100 сообщений  \n 2. "N" - чтобы проанализировать последние N сообщений \n 3. "summary" - чтобы получить все сводки за сегодня \n 4. "summary YYYY-MM-DD" - чтобы получить сводку за конкретный день \n 5. "help" - чтобы получить это сообщение снова`);
-
+            reply(msg, `Debug for chat ${chatName}: messages in total: ${storage[chatId].messages?.length || 0}, summaries: ${JSON.stringify(storage[chatId].summaries || {})}, entire size of storage: ${JSON.stringify(storage).length}`, true);
         } catch (ex) {
             console.error(ex)
         }
@@ -104,33 +144,40 @@ function subscribeHandlers() {
             const chatId = msg.chat?.id;
 
             if (msg.text.match(botTagWithSummaryRegex)) {
-                const todaysSummary = storage[chatId]?.summaries[getTodayDate()];
+                const todaysSummary = storage[chatId]?.summaries?.[getTodayDate()] || [];
                 if (!todaysSummary || todaysSummary.length === 0) {
-                    bot.sendMessage(chatId, 'За сегодня сводок не было, минотавр дремлет.');
+                    reply(msg, 'За сегодня сводок не было, минотавр дремлет.');
                     return;
                 }
 
-                bot.sendMessage(chatId, 'Сводки за сегодня: \n' + todaysSummary.join('\n'));
+                reply(msg, 'Сводки за сегодня: \n' + todaysSummary.join('\n'));
                 return;
             }
 
             const day = msg.text.match(botTagWithSummaryAndDayRegex)?.[1];
             const daySummary = storage[chatId]?.summaries[day];
             if (!daySummary || daySummary.length === 0) {
-                bot.sendMessage(chatId, `За ${daySummary} сводок не сохранено.`);
+                reply(msg, `За ${daySummary} сводок не сохранено.`);
                 return;
             }
 
-            bot.sendMessage(chatId, `Сводки за ${day}: \n` + daySummary.join('\n'));
+            reply(msg, `Сводки за ${day}: \n` + daySummary.join('\n'));
 
         } catch (ex) {
             console.error(ex)
         }
     });
 
-    // Handle the "@LabyrinthNewsletterBot with number" command
+    // Handle the "@LabyrinthNewsletterBot ..." analyze command
     bot.onText(commandMessagesSelectorRegex, async (msg) => {
         try {
+            // exit when debug
+            if (msg.text.match(botTagWithDebugRegex)) {
+                return;
+            }
+            storage.lastCommand = msg.text;
+
+            // exit when any other commands with similar selector
             if (msg.text.match(botTagWithSummaryRegex)
                 || msg.text.match(botTagWithSummaryAndDayRegex)
                 || msg.text.match(commandHelpRegex)) {
@@ -145,26 +192,21 @@ function subscribeHandlers() {
 
             // If no messages are found for today, notify the user
             if (!messagesToAnalyze || messagesToAnalyze.length === 0) {
-                bot.sendMessage(chatId, 'Газеты пусты, минотавр дремлет.');
+                reply(msg, 'Газеты пусты, минотавр дремлет.');
                 return;
             }
 
             if (messagesToAnalyze.length >= MESSAGES_LIMIT) {
-                bot.sendMessage(chatId, `Будет проанализировано только последние ${MESSAGES_LIMIT} сообщений (API, хостинг, и AI токены не бесплатные!). Пожертвуйте лысому на пиво и массаж для разблокировки безлимитной версии :)`);
+                reply(msg, `Будет проанализировано только последние ${MESSAGES_LIMIT} сообщений (API, хостинг, и AI токены не бесплатные!). Пожертвуйте лысому на пиво и массаж для разблокировки безлимитной версии :)`);
             }
 
             const summary = await analyzeMessages(messagesToAnalyze.join('\n'));
 
             // Send all accumulated messages for today
-            bot.sendMessage(chatId, summary);
+            reply(msg, summary);
 
             if (!storage[chatId].summaries) storage[chatId].summaries = {};
-            storage[chatId].summaries[getTodayDate()] = storage[chatId].summaries[getTodayDate()]
-                ? storage[chatId].summaries[getTodayDate()].push(summary)
-                : [summary];
-
-            // Clean up messages
-            storage[chatId].messages = [];
+            storage[chatId].summaries[getTodayDate()] = [...(storage[chatId].summaries[getTodayDate()] || []), summary];
 
             // Clean up summaries (when more than 3)
             const summaries = storage[chatId].summaries;
