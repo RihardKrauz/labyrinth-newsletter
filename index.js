@@ -76,14 +76,8 @@ const reply = async (msg, message, forceOnlyMeFlag) => {
     const senderId = msg.from?.id;
 
     if (msg.text?.includes(onlyMeFlag) || forceOnlyMeFlag) {
-        const sentMessage = await bot.sendMessage(senderId, message);
-        setTimeout(() => {
-            bot.deleteMessage(chatId, sentMessage.message_id)
-                .then()
-                .catch((err) => {
-                    console.error('Failed to delete message:', err);
-                });
-        }, 500);
+        await bot.sendMessage(senderId, message);
+        await bot.deleteMessage(chatId, msg.message_id);
     } else {
         await bot.sendMessage(chatId, message);
     }
