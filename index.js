@@ -180,7 +180,7 @@ function subscribeHandlers() {
             const chatId = msg.chat?.id;
             const numberOfMessages = msg.text?.match(botTagWithNumberRegex)?.[1] || 100;
 
-            const messagesToAnalyze = storage[chatId]?.messages.slice(0, numberOfMessages);
+            const messagesToAnalyze = storage[chatId]?.messages.slice(Math.max(0, storage[chatId]?.messages.length - numberOfMessages - 1), Math.max(0, storage[chatId]?.messages.length - 1));
 
             console.log(`Going to analyze ${messagesToAnalyze.length} messages...`);
 
