@@ -59,6 +59,44 @@ async function analyzeMessages(messages) {
     }
 }
 
+async function analyzeMessagesWithQuestion(messages, question) {
+    try {
+        console.log('Analyzing messages with question...');
+        const response = await fetch("https://labyrinth-newsletter-ai.vercel.app/api/question-messages.js", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ messages, question })
+        });
+
+        const data = await response.json();
+        return data.message;
+    } catch (ex) {
+        console.error(ex);
+        return ex.message || ex || 'Произошла ошибка при анализе сообщений с вопросом';
+    }
+}
+
+async function analyzeQuestion(username, question) {
+    try {
+        console.log('Analyzing messages with question...');
+        const response = await fetch("https://labyrinth-newsletter-ai.vercel.app/api/question.js", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username, question })
+        });
+
+        const data = await response.json();
+        return data.message;
+    } catch (ex) {
+        console.error(ex);
+        return ex.message || ex || 'Произошла ошибка при анализе вопроса';
+    }
+}
+
 const botTag = '@LabyrinthNewsletterBot';
 
 const botTagRegex = new RegExp(`${botTag}`);
@@ -67,6 +105,8 @@ const botTagWithNumberRegex = new RegExp(`^${botTag}\\s(\\d+)`);
 const botTagWithSummaryRegex = new RegExp(`^${botTag}\\ssummary`);
 const botTagWithSummaryAndDayRegex = new RegExp(`^${botTag}\\s(\\d{4}-\\d{2}-\\d{2})`);
 const commandHelpRegex = new RegExp(`^${botTag}\\shelp`);
+const commandInfoRegex = new RegExp(`^${botTag}\\sinfo\\s(.+)`);
+const commandMessagesWithQuestionRegex = new RegExp(`^${botTag}\\squestion\\s(.+)|^${botTag}\\sвопрос\\s(.+)`);
 const commandMessagesSelectorRegex = new RegExp(`^${botTag}\\s(\\d+)|${botTag}`);
 const commandSummarySelectorRegex = new RegExp(`^${botTag}\\s(\\d{4}-\\d{2}-\\d{2})|^${botTag}\\ssummary`);
 const onlyMeFlag = 'me';
@@ -114,7 +154,7 @@ function subscribeHandlers() {
     // Handle the "@LabyrinthNewsletterBot help" command
     bot.onText(commandHelpRegex, async (msg) => {
         try {
-            reply(msg, `Лабиринт приветствует тебя, странник! Я - бот, который поможет сделать сводку сообщений из чата. \n Введи @LabyrinthNewsletterBot и одну из команд: \n 1. "<ничего>" - чтобы получить анализ последних 100 сообщений  \n 2. "N" - чтобы проанализировать последние N сообщений \n 3. "summary" - чтобы получить все сводки за сегодня \n 4. "summary YYYY-MM-DD" - чтобы получить сводку за конкретный день \n 5. "help" - чтобы получить это сообщение снова. \n Добавь к команде "me", чтобы получить ответ в личные сообщения`);
+            reply(msg, `Лабиринт приветствует тебя, странник! Я - бот, который поможет сделать сводку сообщений из чата. \n Введи @LabyrinthNewsletterBot и одну из команд: \n 1. "<ничего>" - чтобы получить анализ последних 100 сообщений  \n 2. "N" - чтобы проанализировать последние N сообщений \n 3. "summary" - чтобы получить все сводки за сегодня \n 4. "summary YYYY-MM-DD" - чтобы получить сводку за конкретный день \n 5. "info <вопрос>" - чтобы получить ответ на информационный вопрос или проверку факта \n 6. "question <вопрос>" - чтобы получить ответ на вопрос по сообщениям из чата (учитывает последние 500) \n 7. "help" - чтобы получить это сообщение снова. \n Добавь к команде "me", чтобы получить ответ в личные сообщения`);
         } catch (ex) {
             console.error(ex)
         }
@@ -162,6 +202,32 @@ function subscribeHandlers() {
         }
     });
 
+    // Handle the "@LabyrinthNewsletterBot info" command
+    bot.onText(commandInfoRegex, async (msg) => {
+        try {
+            console.log(`Going to run "${msg.text}" info request...`);
+            const question = msg.text?.match(commandInfoRegex)?.[1] || '';
+            const summary = await analyzeQuestion(msg.from?.username, question);
+            reply(msg, summary);
+        } catch (ex) {
+            console.error(ex)
+        }
+    });
+
+    // Handle the "@LabyrinthNewsletterBot question" command
+    bot.onText(commandMessagesWithQuestionRegex, async (msg) => {
+        try {
+            console.log(`Going to answer on ${msg.text}...`);
+            const chatId = msg.chat?.id;
+            const messagesToAnalyze = storage[chatId]?.messages.slice(0, Math.max(0, storage[chatId]?.messages.length - 1));
+            const question = msg.text?.match(commandInfoRegex)?.[1] || '';
+            const summary = await analyzeMessagesWithQuestion(messagesToAnalyze.join('\n'), question);
+            reply(msg, summary);
+        } catch (ex) {
+            console.error(ex)
+        }
+    });
+
     // Handle the "@LabyrinthNewsletterBot ..." analyze command
     bot.onText(commandMessagesSelectorRegex, async (msg) => {
         try {
@@ -174,7 +240,9 @@ function subscribeHandlers() {
             // exit when any other commands with similar selector
             if (msg.text.match(botTagWithSummaryRegex)
                 || msg.text.match(botTagWithSummaryAndDayRegex)
-                || msg.text.match(commandHelpRegex)) {
+                || msg.text.match(commandHelpRegex)
+                || msg.text.match(commandInfoRegex)
+                || msg.text.match(commandMessagesWithQuestionRegex)) {
                 return;
             }
             const chatId = msg.chat?.id;
