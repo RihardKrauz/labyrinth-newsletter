@@ -220,7 +220,7 @@ function subscribeHandlers() {
             console.log(`Going to answer on ${msg.text}...`);
             const chatId = msg.chat?.id;
             const messagesToAnalyze = storage[chatId]?.messages.slice(0, Math.max(0, storage[chatId]?.messages.length - 1));
-            const question = msg.text?.match(commandInfoRegex)?.[1] || '';
+            const question = msg.text?.match(commandMessagesWithQuestionRegex)?.[1] || '';
             const summary = await analyzeMessagesWithQuestion(messagesToAnalyze.join('\n'), question);
             reply(msg, summary);
         } catch (ex) {
